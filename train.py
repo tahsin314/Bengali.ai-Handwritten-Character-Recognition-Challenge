@@ -21,7 +21,8 @@ from BanglaDataset import BanglaDataset
 from utils import *
 from metrics import *
 from optimizers import Over9000
-from model import seresnext
+# from model.seresnext import seresnext
+from model.densenet import *
 ## This library is for augmentations .
 from albumentations import (
     PadIfNeeded,
@@ -53,17 +54,17 @@ from albumentations import (
 n_fold = 5
 fold = 0
 SEED = 24
-batch_size = 40
-sz = 128
-learning_rate = 3e-5
-patience = 4
+batch_size = 96
+sz = 224
+learning_rate = 2e-3
+patience = 5
 opts = ['normal', 'mixup', 'cutmix']
 device = 'cuda:0'
 apex = False
-pretrained_model = 'se_resnext50_32x4d'
+pretrained_model = 'densenet121'
 model_name = '{}_trial_stage1_fold_{}'.format(pretrained_model, fold)
 imagenet_stats = ([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-load_model = True
+load_model = False
 history = pd.DataFrame()
 prev_epoch_num = 0
 n_epochs = 210
@@ -75,10 +76,11 @@ np.random.seed(SEED)
 writer = SummaryWriter('runs')
 
 train_aug =Compose([
-  ShiftScaleRotate(p=0.9,border_mode= cv2.BORDER_CONSTANT, value=0, scale_limit=0.25),
+  ShiftScaleRotate(p=0.9,border_mode= cv2.BORDER_CONSTANT, value=[1, 1, 1], scale_limit=0.25),
     OneOf([
-    Cutout(p=0.3, max_h_size=sz//20, max_w_size=sz//20,num_holes=10),
-    GridMask(num_grid=5, p=0.7)], p=0.20),
+    Cutout(p=0.3, max_h_size=sz//20, max_w_size=sz//20, num_holes=10, fill_value=1),
+    GridMask(num_grid=7, p=0.5, fill_value=1)
+    ], p=0.20),
     # OneOf([
     #     ElasticTransform(p=0.1, alpha=1, sigma=50, alpha_affine=30,border_mode=cv2.BORDER_CONSTANT,value =0),
     #     GridDistortion(distort_limit =0.05 ,border_mode=cv2.BORDER_CONSTANT,value =0, p=0.1),
@@ -97,10 +99,10 @@ train_aug =Compose([
 # val_aug = Compose([Normalize([0.0692], [0.2051])])
 val_aug = Compose([Normalize()])
 train_df = pd.read_csv('data/train.csv')
-train_pseudo_df = pd.read_csv('data/train_and_pseudo.csv')
+# train_pseudo_df = pd.read_csv('data/train_and_pseudo.csv')
 nunique = list(train_df.nunique())[1:-1]
 train_df['id'] = train_df['image_id'].apply(lambda x: int(x.split('_')[1]))
-train_pseudo_df['id'] = train_pseudo_df['image_id'].apply(lambda x: int(x.split('_')[1]))
+# train_pseudo_df['id'] = train_pseudo_df['image_id'].apply(lambda x: int(x.split('_')[1]))
 X, y = train_df[['id', 'grapheme_root', 'vowel_diacritic', 'consonant_diacritic']].values[:,0], train_df.values[:,1:]
 train_df['fold'] = np.nan
 train_df= train_df.sample(frac=1, random_state=SEED).reset_index(drop=True)
@@ -111,26 +113,27 @@ for i, (_, test_index) in enumerate(mskf.split(X, y)):
     
 train_df['fold'] = train_df['fold'].astype('int')
 idxs = [i for i in range(len(train_df))]
-# train_idx = []
-# val_idx = []
-model = seresnext(nunique, pretrained_model).to(device)
+train_idx = []
+val_idx = []
+# model = seresnext(nunique, pretrained_model).to(device)
+model = Dnet(nunique).to(device)
 # print(summary(model, (3, 128, 128)))
-writer.add_graph(model, torch.FloatTensor(np.random.randn(1, 3, 128, 128)).cuda())
+writer.add_graph(model, torch.FloatTensor(np.random.randn(1, 3, 224, 224)).cuda())
 # writer.close()
 
 # For stratified split
-# for i in T(range(len(train_df))):
-#     if train_df.iloc[i]['fold'] == fold: val_idx.append(i)
-#     else: train_idx.append(i)
+for i in T(range(len(train_df))):
+    if train_df.iloc[i]['fold'] == fold: val_idx.append(i)
+    else: train_idx.append(i)
 
-# train_idx = idxs[:int((n_fold-1)*len(idxs)/(n_fold))]
-train_idx = np.load('train_pseudo_idxs.npy')
+train_idx = idxs[:int((n_fold-1)*len(idxs)/(n_fold))]
+# train_idx = np.load('train_pseudo_idxs.npy')
 val_idx = idxs[int((n_fold-1)*len(idxs)/(n_fold)):]
 
-train_ds = BanglaDataset(train_pseudo_df, 'data/128_numpy', train_idx, aug=train_aug)
+train_ds = BanglaDataset(train_df, 'data/numpy_format', train_idx, aug=train_aug)
 train_loader = DataLoader(train_ds,batch_size=batch_size, shuffle=True)
 
-valid_ds = BanglaDataset(train_df, 'data/128_numpy', val_idx, aug=val_aug)
+valid_ds = BanglaDataset(train_df, 'data/numpy_format', val_idx, aug=val_aug)
 valid_loader = DataLoader(valid_ds, batch_size=batch_size, shuffle=True)
 
 writer = SummaryWriter('runs')
@@ -150,7 +153,7 @@ def train(epoch,history):
   consonant_diacritic_out=0.0
   running_acc = 0.0
   running_recall = 0.0
-  rate = 0.59
+  rate = 1
   
   if epoch<30:
     rate = 1
@@ -165,6 +168,9 @@ def train(epoch,history):
     labels3 = labels3.to(device)
     total += len(inputs)
     choice = choices(opts, weights=[0.00, 0.35, 0.65])
+    # print(torch.max())
+    # denormalize = UnNormalize(*imagenet_stats)
+    # print(torch.max(denormalize(inputs)))
     writer.add_images('my_image', inputs, 0)
     optimizer.zero_grad()
     if choice[0] == 'normal':
@@ -302,11 +308,11 @@ def evaluate(epoch,history):
    return  running_loss/(len(valid_loader)), total_recall
 
 plist = [
-        {'params': model.backbone.layer0.parameters(),  'lr': learning_rate/50},
-        {'params': model.backbone.layer1.parameters(),  'lr': learning_rate/50},
-        {'params': model.backbone.layer2.parameters(),  'lr': learning_rate/50},
-        {'params': model.backbone.layer3.parameters(),  'lr': learning_rate/50},
-        {'params': model.backbone.layer4.parameters(),  'lr': learning_rate/5}
+        {'params': model.layer0.parameters(),  'lr': learning_rate/50},
+        {'params': model.layer1.parameters(),  'lr': learning_rate/50},
+        {'params': model.layer2.parameters(),  'lr': learning_rate/50},
+        {'params': model.layer3.parameters(),  'lr': learning_rate/50},
+        {'params': model.layer4.parameters(),  'lr': learning_rate/50}
     ]
 # optimizer = Over9000(plist, lr=learning_rate, weight_decay=1e-3)
 optimizer = optim.Adam(plist, lr=learning_rate)
@@ -338,12 +344,12 @@ for epoch in range(prev_epoch_num, n_epochs):
         print(f'Validation recall has increased from:  {best_valid_recall:.4f} to: {valid_recall:.4f}. Saving checkpoint')
         best_state = {'model': model.state_dict(), 'optim': optimizer.state_dict(), 'scheduler': scheduler.state_dict(), 'loss':valid_loss, 'best_recall':valid_recall, 'epoch':epoch}
         # torch.save(best_state, model_name+'.pth')
-        torch.save(best_state, model_name+'_rec_pseudo.pth')
-        torch.save(model.state_dict(), 'model_weights_best_recall_pseudo.pth'.format(fold)) ## Saving model weights based on best validation accuracy.
+        torch.save(best_state, model_name+'_rec.pth')
+        torch.save(model.state_dict(), 'model_weights_best_recall.pth'.format(fold)) ## Saving model weights based on best validation accuracy.
         best_valid_recall = valid_recall ## Set the new validation Recall score to compare with next epoch
     if valid_loss<best_valid_loss:
         print(f'Validation loss has decreased from:  {best_valid_loss:.4f} to: {valid_loss:.4f}. Saving checkpoint')
         best_state = {'model': model.state_dict(), 'optim': optimizer.state_dict(), 'scheduler': scheduler.state_dict(), 'recall':valid_recall, 'best_loss':valid_loss, 'epoch':epoch}
-        torch.save(best_state, model_name+'_loss_pseudo.pth')
-        torch.save(model.state_dict(), 'model_weights_best_loss_pseudo.pth'.format(fold)) ## Saving model weights based on best validation accuracy.
+        torch.save(best_state, model_name+'_los.pth')
+        torch.save(model.state_dict(), 'model_weights_best_loss.pth'.format(fold)) ## Saving model weights based on best validation accuracy.
         best_valid_loss = valid_loss ## Set the new validation Recall score to compare with next epoch

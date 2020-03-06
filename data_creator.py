@@ -4,15 +4,15 @@ import numpy as np
 from p_tqdm import p_map
 from tqdm import tqdm as T
 import cv2
-img_dir='data/128_numpy'
+img_dir='data/numpy_format'
 
 try:
     os.mkdir(img_dir)
 except:
     pass
 
-df = pd.read_parquet('train_images_data.parquet')
-l = len(df)
+# df = pd.read_parquet('train_images_data.parquet')
+# l = len(df)
 
 HEIGHT = 137
 WIDTH = 236
@@ -47,9 +47,6 @@ def crop_resize(img0, size=128, pad=16):
 def Resize(df,size=128):
     resized = {}
     char_data = {'id': list(df.iloc[:, 0]), 'data':np.array(df.iloc[:, 1:])}
-    # df_or = pd.read_parquet(df_or)
-    # df = np.copy(df_or) 
-    # df = df.set_index('image_id')
     for i in T(range(len(char_data['id']))):
        # image = cv2.resize(df.loc[df.index[i]].values.reshape(137,236),(size,size))
         # image0 = 255 - df.loc[df.index[i]].values.reshape(137,236).astype(np.uint8)
@@ -60,6 +57,14 @@ def Resize(df,size=128):
         img = (image0*(255.0/image0.max())).astype(np.uint8)
         # print('Before crop: ', np.max(img))
         image = crop_resize(img)
+        np.save(os.path.join(img_dir, name+'.npy'), image)
+
+def save_as_npy(df):
+    resized = {}
+    char_data = {'id': list(df.iloc[:, 0]), 'data':np.array(df.iloc[:, 1:])}
+    for i in T(range(len(char_data['id']))):
+        image = np.copy(char_data['data'][i]).reshape(HEIGHT, WIDTH)
+        name = char_data['id'][i]
         np.save(os.path.join(img_dir, name+'.npy'), image)
 
 def col_to_numpy(idx):
@@ -82,6 +87,7 @@ def col_to_numpy(idx):
 # p_map(Resize, ['data/train_image_data_{}.parquet'.format(i) for i in range(4)])
 for i in T(range(4)):
     df = pd.read_parquet('data/train_image_data_{}.parquet'.format(i))
-    Resize(df)
+    # Resize(df)
+    save_as_npy(df)
 # x = np.load('data/128_numpy/Train_10.npy')
 # print(df.head()

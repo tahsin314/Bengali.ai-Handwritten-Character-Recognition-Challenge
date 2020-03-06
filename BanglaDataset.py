@@ -114,11 +114,11 @@ class BanglaDataset(Dataset):
         choice = choices(['normal', 'erode', 'dilate'], weights=[1.0, 0.0, 0.0])
         image = np.load(os.path.join(self.dirname, '{}.npy'.format(self.df['image_id'][self.ImageIdx[idx]])))
         # print(image.shape)
-        image = cv2.cvtColor(image.reshape(*image.shape, 1), cv2.COLOR_GRAY2RGB).astype(np.float)/255.
-        # image= cv2.resize(image, (128, 128))
+        image = cv2.cvtColor(image.reshape(*image.shape, 1), cv2.COLOR_GRAY2RGB).astype(np.float)
+        image= cv2.resize(image, (224, 224))/255.
         # image = image.reshape(*image.shape, 1)
         # image = cv2.remap(image)
-        # print(np.max(image))
+        # print(image.shape)
         if choice[0] == 'normal':
             pass
         elif choice[0] == 'erode':
