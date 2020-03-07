@@ -21,7 +21,7 @@ from BanglaDataset import BanglaDataset
 from utils import *
 from metrics import *
 from optimizers import Over9000
-# from model.seresnext import seresnext
+from model.seresnext import seresnext
 from model.densenet import *
 ## This library is for augmentations .
 from albumentations import (
@@ -54,14 +54,14 @@ from albumentations import (
 n_fold = 5
 fold = 0
 SEED = 24
-batch_size = 96
+batch_size = 64
 sz = 224
-learning_rate = 2e-3
+learning_rate = 5e-4
 patience = 5
 opts = ['normal', 'mixup', 'cutmix']
 device = 'cuda:0'
 apex = False
-pretrained_model = 'densenet121'
+pretrained_model = 'se_resnext50_32x4d'
 model_name = '{}_trial_stage1_fold_{}'.format(pretrained_model, fold)
 imagenet_stats = ([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 load_model = False
@@ -115,8 +115,8 @@ train_df['fold'] = train_df['fold'].astype('int')
 idxs = [i for i in range(len(train_df))]
 train_idx = []
 val_idx = []
-# model = seresnext(nunique, pretrained_model).to(device)
-model = Dnet(nunique).to(device)
+model = seresnext(nunique, pretrained_model).to(device)
+# model = Dnet(nunique).to(device)
 # print(summary(model, (3, 128, 128)))
 writer.add_graph(model, torch.FloatTensor(np.random.randn(1, 3, 224, 224)).cuda())
 # writer.close()
@@ -126,9 +126,9 @@ for i in T(range(len(train_df))):
     if train_df.iloc[i]['fold'] == fold: val_idx.append(i)
     else: train_idx.append(i)
 
-train_idx = idxs[:int((n_fold-1)*len(idxs)/(n_fold))]
+# train_idx = idxs[:int((n_fold-1)*len(idxs)/(n_fold))]
 # train_idx = np.load('train_pseudo_idxs.npy')
-val_idx = idxs[int((n_fold-1)*len(idxs)/(n_fold)):]
+# val_idx = idxs[int((n_fold-1)*len(idxs)/(n_fold)):]
 
 train_ds = BanglaDataset(train_df, 'data/numpy_format', train_idx, aug=train_aug)
 train_loader = DataLoader(train_ds,batch_size=batch_size, shuffle=True)
@@ -167,7 +167,7 @@ def train(epoch,history):
     labels2 = labels2.to(device)
     labels3 = labels3.to(device)
     total += len(inputs)
-    choice = choices(opts, weights=[0.00, 0.35, 0.65])
+    choice = choices(opts, weights=[0.30, 0.25, 0.45])
     # print(torch.max())
     # denormalize = UnNormalize(*imagenet_stats)
     # print(torch.max(denormalize(inputs)))
@@ -308,11 +308,11 @@ def evaluate(epoch,history):
    return  running_loss/(len(valid_loader)), total_recall
 
 plist = [
-        {'params': model.layer0.parameters(),  'lr': learning_rate/50},
-        {'params': model.layer1.parameters(),  'lr': learning_rate/50},
-        {'params': model.layer2.parameters(),  'lr': learning_rate/50},
-        {'params': model.layer3.parameters(),  'lr': learning_rate/50},
-        {'params': model.layer4.parameters(),  'lr': learning_rate/50}
+        {'params': model.backbone.layer0.parameters(),  'lr': learning_rate/50},
+        {'params': model.backbone.layer1.parameters(),  'lr': learning_rate/50},
+        {'params': model.backbone.layer2.parameters(),  'lr': learning_rate/50},
+        {'params': model.backbone.layer3.parameters(),  'lr': learning_rate/50},
+        {'params': model.backbone.layer4.parameters(),  'lr': learning_rate/50}
     ]
 # optimizer = Over9000(plist, lr=learning_rate, weight_decay=1e-3)
 optimizer = optim.Adam(plist, lr=learning_rate)
