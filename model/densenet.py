@@ -16,8 +16,9 @@ class Dnet(nn.Module):
         # m = arch(True) if pre else arch()
         m = arch
         
-        conv = nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3, bias=False)
-        w = m.features.conv0.weight
+        conv = nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
+        # w = m.features.conv0.weight
+        w = (m.features.conv0.weight.sum(1)).unsqueeze(1)
         conv.weight = nn.Parameter(w)
         
         self.layer0 = nn.Sequential(conv, m.features.norm0, nn.ReLU(inplace=True))
@@ -33,8 +34,8 @@ class Dnet(nn.Module):
         self.head1 = Head(nc,n[0])
         self.head2 = Head(nc,n[1])
         self.head3 = Head(nc,n[2])
-        #to_Mish(self.layer0), to_Mish(self.layer1), to_Mish(self.layer2)
-        #to_Mish(self.layer3), to_Mish(self.layer4)
+        to_Mish(self.layer0), to_Mish(self.layer1), to_Mish(self.layer2)
+        to_Mish(self.layer3), to_Mish(self.layer4)
         
     def forward(self, x):    
         x = self.layer0(x)

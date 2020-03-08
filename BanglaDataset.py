@@ -112,10 +112,12 @@ class BanglaDataset(Dataset):
         # print(os.path.join(self.dirname, '{}.npy'.format(self.df['image_id'][self.ImageIdx[idx]])))
         # choice = choices(['normal', 'erode', 'dilate'], weights=[0.60, 0.25, 0.15])
         choice = choices(['normal', 'erode', 'dilate'], weights=[1.0, 0.0, 0.0])
-        image = np.load(os.path.join(self.dirname, '{}.npy'.format(self.df['image_id'][self.ImageIdx[idx]])))
+        image = 255 - np.load(os.path.join(self.dirname, '{}.npy'.format(self.df['image_id'][self.ImageIdx[idx]])))
         # print(image.shape)
-        image = cv2.cvtColor(image.reshape(*image.shape, 1), cv2.COLOR_GRAY2RGB).astype(np.float)
-        image= cv2.resize(image, (224, 224))/255.
+        image = image.reshape(*image.shape, 1)
+        # image = cv2.cvtColor(image.reshape(*image.shape, 1), cv2.COLOR_GRAY2RGB).astype(np.float)
+        # image= cv2.resize(image, (224, 224))/255.
+        image = image/255.
         # image = image.reshape(*image.shape, 1)
         # image = cv2.remap(image)
         # print(image.shape)
@@ -140,6 +142,7 @@ class BanglaDataset(Dataset):
         else:
             # image = image.reshape(1, *image.shape)
             image = image.transpose(2, 0, 1)
+        # print(np.min(image), np.max(image))
         if self.return_name:
             return self.df['image_id'][self.ImageIdx[idx]], image,label1,label2,label3
         

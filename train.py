@@ -54,14 +54,15 @@ from albumentations import (
 n_fold = 5
 fold = 0
 SEED = 24
-batch_size = 64
-sz = 224
-learning_rate = 5e-4
+batch_size = 48
+sz = 128
+learning_rate = 3.75e-4
 patience = 5
 opts = ['normal', 'mixup', 'cutmix']
 device = 'cuda:0'
 apex = False
 pretrained_model = 'se_resnext50_32x4d'
+# pretrained_model = 'densenet121'
 model_name = '{}_trial_stage1_fold_{}'.format(pretrained_model, fold)
 imagenet_stats = ([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 load_model = False
@@ -73,26 +74,26 @@ best_valid_recall = 0.0
 best_valid_loss = np.inf
 np.random.seed(SEED)
 
-writer = SummaryWriter('runs')
+writer = SummaryWriter('runs2')
 
 train_aug =Compose([
-  ShiftScaleRotate(p=0.9,border_mode= cv2.BORDER_CONSTANT, value=[1, 1, 1], scale_limit=0.25),
+  ShiftScaleRotate(p=0.9,border_mode= cv2.BORDER_CONSTANT, value=[0, 0, 0], scale_limit=0.25),
     OneOf([
-    Cutout(p=0.3, max_h_size=sz//20, max_w_size=sz//20, num_holes=10, fill_value=1),
-    GridMask(num_grid=7, p=0.5, fill_value=1)
+    Cutout(p=0.3, max_h_size=sz//16, max_w_size=sz//16, num_holes=10, fill_value=0),
+    GridMask(num_grid=7, p=0.7, fill_value=0)
     ], p=0.20),
     # OneOf([
     #     ElasticTransform(p=0.1, alpha=1, sigma=50, alpha_affine=30,border_mode=cv2.BORDER_CONSTANT,value =0),
     #     GridDistortion(distort_limit =0.05 ,border_mode=cv2.BORDER_CONSTANT,value =0, p=0.1),
     #     OpticalDistortion(p=0.1, distort_limit= 0.05, shift_limit=0.2,border_mode=cv2.BORDER_CONSTANT,value =0)                  
     #     ], p=0.3),
-    # OneOf([
-    #     GaussNoise(var_limit=0.01),
-    #     Blur(),
-    #     GaussianBlur(blur_limit=3),
-    #     RandomGamma(p=0.8),
-    #     ], p=0.5)
-    Normalize()
+    OneOf([
+        GaussNoise(var_limit=0.01),
+        Blur(),
+        GaussianBlur(blur_limit=3),
+        RandomGamma(p=0.8),
+        ], p=0.5)
+    # Normalize()
     ]
       )
 # Normalize([0.0692], [0.2051])]
@@ -118,7 +119,7 @@ val_idx = []
 model = seresnext(nunique, pretrained_model).to(device)
 # model = Dnet(nunique).to(device)
 # print(summary(model, (3, 128, 128)))
-writer.add_graph(model, torch.FloatTensor(np.random.randn(1, 3, 224, 224)).cuda())
+writer.add_graph(model, torch.FloatTensor(np.random.randn(1, 1, 137, 236)).cuda())
 # writer.close()
 
 # For stratified split
@@ -133,7 +134,7 @@ for i in T(range(len(train_df))):
 train_ds = BanglaDataset(train_df, 'data/numpy_format', train_idx, aug=train_aug)
 train_loader = DataLoader(train_ds,batch_size=batch_size, shuffle=True)
 
-valid_ds = BanglaDataset(train_df, 'data/numpy_format', val_idx, aug=val_aug)
+valid_ds = BanglaDataset(train_df, 'data/numpy_format', val_idx, aug=None)
 valid_loader = DataLoader(valid_ds, batch_size=batch_size, shuffle=True)
 
 writer = SummaryWriter('runs')
@@ -345,11 +346,11 @@ for epoch in range(prev_epoch_num, n_epochs):
         best_state = {'model': model.state_dict(), 'optim': optimizer.state_dict(), 'scheduler': scheduler.state_dict(), 'loss':valid_loss, 'best_recall':valid_recall, 'epoch':epoch}
         # torch.save(best_state, model_name+'.pth')
         torch.save(best_state, model_name+'_rec.pth')
-        torch.save(model.state_dict(), 'model_weights_best_recall.pth'.format(fold)) ## Saving model weights based on best validation accuracy.
+        torch.save(model.state_dict(), '{}_model_weights_best_recall.pth'.format(model_name)) ## Saving model weights based on best validation accuracy.
         best_valid_recall = valid_recall ## Set the new validation Recall score to compare with next epoch
     if valid_loss<best_valid_loss:
         print(f'Validation loss has decreased from:  {best_valid_loss:.4f} to: {valid_loss:.4f}. Saving checkpoint')
         best_state = {'model': model.state_dict(), 'optim': optimizer.state_dict(), 'scheduler': scheduler.state_dict(), 'recall':valid_recall, 'best_loss':valid_loss, 'epoch':epoch}
-        torch.save(best_state, model_name+'_los.pth')
-        torch.save(model.state_dict(), 'model_weights_best_loss.pth'.format(fold)) ## Saving model weights based on best validation accuracy.
+        torch.save(best_state, model_name+'_loss.pth')
+        torch.save(model.state_dict(), '{}_model_weights_best_loss.pth'.format(model_name)) ## Saving model weights based on best validation accuracy.
         best_valid_loss = valid_loss ## Set the new validation Recall score to compare with next epoch

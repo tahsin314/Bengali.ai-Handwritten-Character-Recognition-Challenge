@@ -15,14 +15,18 @@ class seresnext(nn.Module):
         self.backbone = get_cadene_model(model_name)
 #         in_features = self.backbone.fc.in_features
         # for Resnet
-        # self.backbone.conv1 = nn.Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
+        # print(self.backbone.layer4)
+        self.backbone.conv1 = nn.Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
         arch = get_cadene_model(model_name)
-        # arch = list(arch.layer0.children())
-        # w = arch[0].weight
+        arch_layer0 = list(arch.layer0.children())
+        arch_layer4 = list(arch.layer4.children())
+        w = arch_layer0[0].weight
         # self.backbone.layer0.conv1 = nn.Conv2d(1, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False)
-        # self.backbone.layer0.conv1.weight = nn.Parameter(torch.mean(w, dim=1, keepdim=True))
+        self.backbone.layer0.conv1.weight = nn.Parameter(torch.sum(w, dim=1, keepdim=True))
         self.backbone.layer0.relu1 = Mish()
-        nc = 2048 # 512 if res34
+        # nc = 2048 # 512 if res34
+        # nc = self.backbone.layer4.conv3.weight.shape[0]
+        nc = 2048
         
         # self.layer3_graph = self.backbone.layer3
         # self.layer3 = self.backbone.layer3
