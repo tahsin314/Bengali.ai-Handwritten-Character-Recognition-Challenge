@@ -159,7 +159,7 @@ def train(epoch,history):
   if epoch<30:
     rate = 1
   elif epoch>=30 and rate>0.65:
-    rate = np.exp(-(epoch-prev_epoch_num-30)/60)
+    rate = np.exp(-(epoch-30)/60)
   else:
     rate = 0.65
   for idx, (inputs,labels1,labels2,labels3) in enumerate(train_loader):
