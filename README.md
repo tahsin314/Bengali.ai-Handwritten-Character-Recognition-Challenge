@@ -22,4 +22,11 @@ So far my best score is obtained from se-resnext50. It scored 0.981 on validatio
 - SE-Resnext101 (Teacher-Student model)
 - Focal Loss (?)
 
+**Important Discussions**:
+- Validation [Data](https://www.kaggle.com/haqishen/validation-with-unseen)
+- [Focal Loss + OHEM](https://www.kaggle.com/c/bengaliai-cv19/discussion/128665): Note: Unstable
+- [Discussion](https://www.kaggle.com/c/bengaliai-cv19/discussion/128911) on how to train with EfficientNet
+- [MaxBlurPool2D](https://www.kaggle.com/c/bengaliai-cv19/discussion/125819)
+- [Augmix](https://www.kaggle.com/c/bengaliai-cv19/discussion/129697) Implementation  
+
 **More resources will be added soon.**
