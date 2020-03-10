@@ -4,6 +4,7 @@ import curses
 import gc
 import time
 from random import choices
+from itertools import chain
 import numpy as np
 import pandas as pd
 import sklearn
@@ -21,8 +22,10 @@ from BanglaDataset import BanglaDataset
 from utils import *
 from metrics import *
 from optimizers import Over9000
+from augmentations.augmix import RandomAugMix
 from model.seresnext import seresnext
-from model.densenet import *
+from model.effnet import EfficientNetWrapper
+# from model.densenet import *
 ## This library is for augmentations .
 from albumentations import (
     PadIfNeeded,
@@ -60,9 +63,10 @@ learning_rate = 3.75e-4
 patience = 5
 opts = ['normal', 'mixup', 'cutmix']
 device = 'cuda:0'
-apex = False
-pretrained_model = 'se_resnext50_32x4d'
+apex = True
+# pretrained_model = 'se_resnext50_32x4d'
 # pretrained_model = 'densenet121'
+pretrained_model = 'efficientnet-b4'
 model_name = '{}_trial_stage1_fold_{}'.format(pretrained_model, fold)
 imagenet_stats = ([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 load_model = False
@@ -82,6 +86,7 @@ train_aug =Compose([
     Cutout(p=0.3, max_h_size=sz//16, max_w_size=sz//16, num_holes=10, fill_value=0),
     GridMask(num_grid=7, p=0.7, fill_value=0)
     ], p=0.20),
+    # RandomAugMix(severity=3, width=3, alpha=1., p=0.3),dd
     # OneOf([
     #     ElasticTransform(p=0.1, alpha=1, sigma=50, alpha_affine=30,border_mode=cv2.BORDER_CONSTANT,value =0),
     #     GridDistortion(distort_limit =0.05 ,border_mode=cv2.BORDER_CONSTANT,value =0, p=0.1),
@@ -116,8 +121,9 @@ train_df['fold'] = train_df['fold'].astype('int')
 idxs = [i for i in range(len(train_df))]
 train_idx = []
 val_idx = []
-model = seresnext(nunique, pretrained_model).to(device)
-# model = Dnet(nunique).to(device)
+# model = seresnext(nunique, pretrained_model).to(device)
+# model = Dnet(nunique).to(device
+model = EfficientNetWrapper(pretrained_model).to(device)
 # print(summary(model, (3, 128, 128)))
 writer.add_graph(model, torch.FloatTensor(np.random.randn(1, 1, 137, 236)).cuda())
 # writer.close()
@@ -308,17 +314,23 @@ def evaluate(epoch,history):
    history.to_csv('history_{}.csv'.format(pretrained_model), index=False)
    return  running_loss/(len(valid_loader)), total_recall
 
+# plist = [
+#         {'params': model.backbone.layer0.parameters(),  'lr': learning_rate/50},
+#         {'params': model.backbone.layer1.parameters(),  'lr': learning_rate/50},
+#         {'params': model.backbone.layer2.parameters(),  'lr': learning_rate/50},
+#         {'params': model.backbone.layer3.parameters(),  'lr': learning_rate/50},
+#         {'params': model.backbone.layer4.parameters(),  'lr': learning_rate/50}
+#     ]
 plist = [
-        {'params': model.backbone.layer0.parameters(),  'lr': learning_rate/50},
-        {'params': model.backbone.layer1.parameters(),  'lr': learning_rate/50},
-        {'params': model.backbone.layer2.parameters(),  'lr': learning_rate/50},
-        {'params': model.backbone.layer3.parameters(),  'lr': learning_rate/50},
-        {'params': model.backbone.layer4.parameters(),  'lr': learning_rate/50}
-    ]
+  {"params": model.head1.parameters(), "lr": learning_rate},
+  {"params": model.head2.parameters(), "lr": learning_rate},
+  {"params": model.head3.parameters(), "lr": learning_rate},
+  # {"params": model.backbone.extract_features.parameters(), "lr": learning_rate/100}
+]
 # optimizer = Over9000(plist, lr=learning_rate, weight_decay=1e-3)
-optimizer = optim.Adam(plist, lr=learning_rate)
-scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, learning_rate, total_steps=None, epochs=n_epochs, steps_per_epoch=3348, pct_start=0.0,
-                                   anneal_strategy='cos', cycle_momentum=True,base_momentum=0.85, max_momentum=0.95,  div_factor=100.0)
+optimizer = optim.Adam(plist, lr=learning_rate/100)
+# scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, learning_rate, total_steps=None, epochs=n_epochs, steps_per_epoch=3348, pct_start=0.0,
+                                  #  anneal_strategy='cos', cycle_momentum=True,base_momentum=0.85, max_momentum=0.95,  div_factor=100.0)
 lr_reduce_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=patience, verbose=True, threshold=1e-4, threshold_mode='rel', cooldown=0, min_lr=1e-6, eps=1e-08)
 criterion = nn.CrossEntropyLoss()
 

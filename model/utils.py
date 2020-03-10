@@ -6,6 +6,29 @@ from torchvision import models
 import pretrainedmodels
 from typing import Optional
 
+
+class SwishImplementation(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, i):
+        result = i * torch.sigmoid(i)
+        ctx.save_for_backward(i)
+        return result
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        i = ctx.saved_variables[0]
+        sigmoid_i = torch.sigmoid(i)
+        return grad_output * (sigmoid_i * (1 + i * (1 - sigmoid_i)))
+
+
+class MemoryEfficientSwish(nn.Module):
+    def forward(self, x):
+        return SwishImplementation.apply(x)
+
+class Swish(nn.Module):
+    def forward(self, x):
+        return x * torch.sigmoid(x)
+
 class AdaptiveConcatPool2d(Module):
     "Layer that concats `AdaptiveAvgPool2d` and `AdaptiveMaxPool2d`."
     def __init__(self, sz=None):
@@ -73,10 +96,15 @@ def to_Mish(model):
             to_Mish(child)
 
 class Head(nn.Module):
-    def __init__(self, nc, n, ps=0.5):
+    def __init__(self, nc, n, ps=0.5, activation='swish'):
         super().__init__()
-        layers = [AdaptiveConcatPool2d(), Mish(), Flatten()] + \
+        if activation=='mish':
+            layers = [AdaptiveConcatPool2d(), Mish(), Flatten()] + \
             bn_drop_lin(nc*2, 512, True, ps, Mish()) + \
+            bn_drop_lin(512, n, True, ps)
+        else:
+            layers = [AdaptiveConcatPool2d(), Swish(), Flatten()] + \
+            bn_drop_lin(nc*2, 512, True, ps, Swish()) + \
             bn_drop_lin(512, n, True, ps)
         self.fc = nn.Sequential(*layers)
         # self._init_weight()
