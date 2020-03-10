@@ -29,4 +29,27 @@ So far my best score is obtained from se-resnext50. It scored 0.981 on validatio
 - [MaxBlurPool2D](https://www.kaggle.com/c/bengaliai-cv19/discussion/125819)
 - [Augmix](https://www.kaggle.com/c/bengaliai-cv19/discussion/129697) Implementation  
 
+**Resources**:
+- Half Precision GeM:
+
+```
+def gem(x, p=3, eps=1e-6):
+    x = x.double() # x=x.to(torch.float32) # comment this during inference
+    x = F.avg_pool2d(x.clamp(min=eps).pow(p), (x.size(-2), x.size(-1))).pow(1./p)
+    return x.half() # Comment this line in inference code use ## return x
+
+class GeM(nn.Module):
+    def init(self, p=3, eps=1e-6):
+        super(GeM,self).init()
+        # super().init()
+        self.p = Parameter(torch.ones(1)*p)
+        # print(self.p.dtype)
+        self.eps = eps
+    def forward(self, x):
+        return gem(x, p=self.p, eps=self.eps)
+    def repr(self):
+        return self.class.name + '(' + 'p=' + '{:.4f}'.format(self.p.data.tolist()[0]) + ', ' + 'eps=' + str(self.eps) + ')'
+```
+
+
 **More resources will be added soon.**
