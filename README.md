@@ -20,7 +20,7 @@ So far my best score is obtained from se-resnext50. It scored 0.981 on validatio
 - AugMix
 - EfficientNet with customized last Convolutional Layer
 - SE-Resnext101 (Teacher-Student model)
-- Focal Loss (?)
+- Focal Loss with EfficientNet-B4
 
 **Important Discussions**:
 - Validation [Data](https://www.kaggle.com/haqishen/validation-with-unseen)
