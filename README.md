@@ -5,7 +5,11 @@ Trained using customized 1 channel input `densenet` and `se-resnext` model.
 
 Used `OHEM Loss` for training.
 
-So far my best score is obtained from se-resnext50. It scored 0.981 on validation and 0.9707 on LB.
+So far my best score is obtained from se-resnext50. It scored 0.981 on validation and `0.9707` on LB.
+
+
+**Update**: Another se-resnext50 model scores 0.9805 on val data but had lower loss. It achieved `0.9717` on LB.
+
 
 **Things that works**:
  - SE-Resnext50
