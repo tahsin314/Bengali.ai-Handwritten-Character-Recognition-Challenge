@@ -60,7 +60,7 @@ fold = 0
 SEED = 24
 batch_size = 48
 sz = 128
-learning_rate = 5e-4
+learning_rate = 3e-5
 patience = 5
 opts = ['normal', 'mixup', 'cutmix']
 device = 'cuda:0'
@@ -82,7 +82,7 @@ best_valid_loss = np.inf
 np.random.seed(SEED)
 os.makedirs(model_dir, exist_ok=True)
 os.makedirs(history_dir, exist_ok=True)
-writer = SummaryWriter('runs')
+writer = SummaryWriter('runs_seresnext')
 
 train_aug =Compose([
   ShiftScaleRotate(p=0.9,border_mode= cv2.BORDER_CONSTANT, value=[0, 0, 0], scale_limit=0.25),
@@ -96,12 +96,12 @@ train_aug =Compose([
     #     GridDistortion(distort_limit =0.05 ,border_mode=cv2.BORDER_CONSTANT,value =0, p=0.1),
     #     OpticalDistortion(p=0.1, distort_limit= 0.05, shift_limit=0.2,border_mode=cv2.BORDER_CONSTANT,value =0)                  
     #     ], p=0.3),
-    # OneOf([
-    #     GaussNoise(var_limit=0.01),
-    #     Blur(),
-    #     GaussianBlur(blur_limit=3),
-    #     RandomGamma(p=0.8),
-    #     ], p=0.5)
+    OneOf([
+        GaussNoise(var_limit=0.01),
+        Blur(),
+        GaussianBlur(blur_limit=3),
+        RandomGamma(p=0.8),
+        ], p=0.5)
     # Normalize()
     ]
       )
@@ -147,7 +147,7 @@ train_loader = DataLoader(train_ds,batch_size=batch_size, shuffle=True)
 valid_ds = BanglaDataset(train_df, 'data/numpy_format', val_idx, aug=None)
 valid_loader = DataLoader(valid_ds, batch_size=batch_size, shuffle=True)
 
-writer = SummaryWriter('runs')
+writer = SummaryWriter('runs_seresnext')
 ## This function for train is copied from @hanjoonchoe
 ## We are going to train and track accuracy and then evaluate and track validation accuracy
 
@@ -335,7 +335,7 @@ plist = [
 optimizer = optim.Adam(plist, lr=learning_rate)
 # scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, learning_rate, total_steps=None, epochs=n_epochs, steps_per_epoch=3348, pct_start=0.0,
                                   #  anneal_strategy='cos', cycle_momentum=True,base_momentum=0.85, max_momentum=0.95,  div_factor=100.0)
-lr_reduce_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=patience, verbose=True, threshold=1e-4, threshold_mode='rel', cooldown=0, min_lr=1e-6, eps=1e-08)
+lr_reduce_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=patience, verbose=True, threshold=1e-4, threshold_mode='rel', cooldown=0, min_lr=1e-7, eps=1e-08)
 criterion = nn.CrossEntropyLoss()
 
 if load_model:

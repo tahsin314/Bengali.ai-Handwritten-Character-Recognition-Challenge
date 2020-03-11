@@ -103,7 +103,7 @@ class Head(nn.Module):
             bn_drop_lin(nc*2, 512, True, ps, Mish()) + \
             bn_drop_lin(512, n, True, ps)
         else:
-            layers = [AdaptiveConcatPool2d(), Swish(), Flatten()] + \
+            layers = [GeM(), Swish(), Flatten()] + \
             bn_drop_lin(nc*2, 512, True, ps, Swish()) + \
             bn_drop_lin(512, n, True, ps)
         self.fc = nn.Sequential(*layers)
