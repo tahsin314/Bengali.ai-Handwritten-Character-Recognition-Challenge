@@ -26,7 +26,7 @@ from augmentations.augmix import RandomAugMix
 from augmentations.gridmask import GridMask
 from model.seresnext import seresnext
 from model.effnet import EfficientNetWrapper
-# from model.densenet import *
+from model.densenet import *
 ## This library is for augmentations .
 from albumentations import (
     PadIfNeeded,
@@ -55,18 +55,18 @@ from albumentations import (
     GaussianBlur,
     Normalize, 
 )
-n_fold = 5
+n_fold = 20
 fold = 0
 SEED = 24
 batch_size = 48
 sz = 128
-learning_rate = 3e-5
+learning_rate = 2e-4
 patience = 5
 opts = ['normal', 'mixup', 'cutmix']
 device = 'cuda:0'
-apex = False
-pretrained_model = 'se_resnext101_32x4d'
-# pretrained_model = 'densenet121'
+apex = True
+# pretrained_model = 'se_resnext101_32x4d'
+pretrained_model = 'densenet121'
 # pretrained_model = 'efficientnet-b4'
 model_name = '{}_trial_stage1_fold_{}'.format(pretrained_model, fold)
 model_dir = 'model_dir'
@@ -82,7 +82,7 @@ best_valid_loss = np.inf
 np.random.seed(SEED)
 os.makedirs(model_dir, exist_ok=True)
 os.makedirs(history_dir, exist_ok=True)
-writer = SummaryWriter('runs_seresnext')
+writer = SummaryWriter('runs_dnet')
 
 train_aug =Compose([
   ShiftScaleRotate(p=0.9,border_mode= cv2.BORDER_CONSTANT, value=[0, 0, 0], scale_limit=0.25),
@@ -90,18 +90,18 @@ train_aug =Compose([
     Cutout(p=0.3, max_h_size=sz//16, max_w_size=sz//16, num_holes=10, fill_value=0),
     # GridMask(num_grid=7, p=0.7, fill_value=0)
     ], p=0.20),
-    RandomAugMix(severity=1, width=1, alpha=1., p=0.2),
+    # RandomAugMix(severity=1, width=1, alpha=1., p=0.2),
     # OneOf([
     #     ElasticTransform(p=0.1, alpha=1, sigma=50, alpha_affine=30,border_mode=cv2.BORDER_CONSTANT,value =0),
     #     GridDistortion(distort_limit =0.05 ,border_mode=cv2.BORDER_CONSTANT,value =0, p=0.1),
     #     OpticalDistortion(p=0.1, distort_limit= 0.05, shift_limit=0.2,border_mode=cv2.BORDER_CONSTANT,value =0)                  
     #     ], p=0.3),
-    OneOf([
-        GaussNoise(var_limit=0.01),
-        Blur(),
-        GaussianBlur(blur_limit=3),
-        RandomGamma(p=0.8),
-        ], p=0.5)
+    # OneOf([
+    #     GaussNoise(var_limit=0.01),
+    #     Blur(),
+    #     GaussianBlur(blur_limit=3),
+    #     RandomGamma(p=0.8),
+    #     ], p=0.5)
     # Normalize()
     ]
       )
@@ -125,8 +125,8 @@ train_df['fold'] = train_df['fold'].astype('int')
 idxs = [i for i in range(len(train_df))]
 train_idx = []
 val_idx = []
-model = seresnext(nunique, pretrained_model).to(device)
-# model = Dnet(nunique).to(device
+# model = seresnext(nunique, pretrained_model).to(device)
+model = Dnet(nunique).to(device)
 # model = EfficientNetWrapper(pretrained_model).to(device)
 # print(summary(model, (3, 128, 128)))
 writer.add_graph(model, torch.FloatTensor(np.random.randn(1, 1, 137, 236)).cuda())
@@ -147,7 +147,7 @@ train_loader = DataLoader(train_ds,batch_size=batch_size, shuffle=True)
 valid_ds = BanglaDataset(train_df, 'data/numpy_format', val_idx, aug=None)
 valid_loader = DataLoader(valid_ds, batch_size=batch_size, shuffle=True)
 
-writer = SummaryWriter('runs_seresnext')
+writer = SummaryWriter('runs_dnet')
 ## This function for train is copied from @hanjoonchoe
 ## We are going to train and track accuracy and then evaluate and track validation accuracy
 
@@ -178,7 +178,7 @@ def train(epoch,history):
     labels2 = labels2.to(device)
     labels3 = labels3.to(device)
     total += len(inputs)
-    choice = choices(opts, weights=[0.30, 0.25, 0.45])
+    choice = choices(opts, weights=[1.0, 0.0, 0.0])
     # print(torch.max())
     # denormalize = UnNormalize(*imagenet_stats)
     # print(torch.max(denormalize(inputs)))
@@ -319,11 +319,11 @@ def evaluate(epoch,history):
    return  running_loss/(len(valid_loader)), total_recall
 
 plist = [
-        {'params': model.backbone.layer0.parameters(),  'lr': learning_rate/50},
-        {'params': model.backbone.layer1.parameters(),  'lr': learning_rate/50},
-        {'params': model.backbone.layer2.parameters(),  'lr': learning_rate/50},
-        {'params': model.backbone.layer3.parameters(),  'lr': learning_rate/50},
-        {'params': model.backbone.layer4.parameters(),  'lr': learning_rate/50}
+        {'params': model.layer0.parameters(),  'lr': learning_rate/50},
+        {'params': model.layer1.parameters(),  'lr': learning_rate/50},
+        {'params': model.layer2.parameters(),  'lr': learning_rate/50},
+        {'params': model.layer3.parameters(),  'lr': learning_rate/50},
+        {'params': model.layer4.parameters(),  'lr': learning_rate/50}
     ]
 # plist = [
 #   {"params": model.head1.parameters(), "lr": learning_rate},
