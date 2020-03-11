@@ -23,6 +23,7 @@ from utils import *
 from metrics import *
 from optimizers import Over9000
 from augmentations.augmix import RandomAugMix
+from augmentations.gridmask import GridMask
 from model.seresnext import seresnext
 from model.effnet import EfficientNetWrapper
 # from model.densenet import *
@@ -59,11 +60,11 @@ fold = 0
 SEED = 24
 batch_size = 48
 sz = 128
-learning_rate = 3.75e-4
+learning_rate = 5e-4
 patience = 5
 opts = ['normal', 'mixup', 'cutmix']
 device = 'cuda:0'
-apex = True
+apex = False
 # pretrained_model = 'se_resnext50_32x4d'
 # pretrained_model = 'densenet121'
 pretrained_model = 'efficientnet-b4'
@@ -78,7 +79,7 @@ best_valid_recall = 0.0
 best_valid_loss = np.inf
 np.random.seed(SEED)
 
-writer = SummaryWriter('runs2')
+writer = SummaryWriter('runs')
 
 train_aug =Compose([
   ShiftScaleRotate(p=0.9,border_mode= cv2.BORDER_CONSTANT, value=[0, 0, 0], scale_limit=0.25),
@@ -86,7 +87,7 @@ train_aug =Compose([
     Cutout(p=0.3, max_h_size=sz//16, max_w_size=sz//16, num_holes=10, fill_value=0),
     GridMask(num_grid=7, p=0.7, fill_value=0)
     ], p=0.20),
-    # RandomAugMix(severity=3, width=3, alpha=1., p=0.3),dd
+    RandomAugMix(severity=3, width=3, alpha=1., p=0.4),
     # OneOf([
     #     ElasticTransform(p=0.1, alpha=1, sigma=50, alpha_affine=30,border_mode=cv2.BORDER_CONSTANT,value =0),
     #     GridDistortion(distort_limit =0.05 ,border_mode=cv2.BORDER_CONSTANT,value =0, p=0.1),
@@ -355,14 +356,14 @@ for epoch in range(prev_epoch_num, n_epochs):
     valid_loss, valid_recall = evaluate(epoch,history)
     if valid_recall > best_valid_recall:
         print(f'Validation recall has increased from:  {best_valid_recall:.4f} to: {valid_recall:.4f}. Saving checkpoint')
-        best_state = {'model': model.state_dict(), 'optim': optimizer.state_dict(), 'scheduler': scheduler.state_dict(), 'loss':valid_loss, 'best_recall':valid_recall, 'epoch':epoch}
+        best_state = {'model': model.state_dict(), 'optim': optimizer.state_dict(), 'scheduler': lr_reduce_scheduler.state_dict(), 'loss':valid_loss, 'best_recall':valid_recall, 'epoch':epoch}
         # torch.save(best_state, model_name+'.pth')
         torch.save(best_state, model_name+'_rec.pth')
         torch.save(model.state_dict(), '{}_model_weights_best_recall.pth'.format(model_name)) ## Saving model weights based on best validation accuracy.
         best_valid_recall = valid_recall ## Set the new validation Recall score to compare with next epoch
     if valid_loss<best_valid_loss:
         print(f'Validation loss has decreased from:  {best_valid_loss:.4f} to: {valid_loss:.4f}. Saving checkpoint')
-        best_state = {'model': model.state_dict(), 'optim': optimizer.state_dict(), 'scheduler': scheduler.state_dict(), 'recall':valid_recall, 'best_loss':valid_loss, 'epoch':epoch}
+        best_state = {'model': model.state_dict(), 'optim': optimizer.state_dict(), 'scheduler': lr_reduce_scheduler.state_dict(), 'recall':valid_recall, 'best_loss':valid_loss, 'epoch':epoch}
         torch.save(best_state, model_name+'_loss.pth')
         torch.save(model.state_dict(), '{}_model_weights_best_loss.pth'.format(model_name)) ## Saving model weights based on best validation accuracy.
         best_valid_loss = valid_loss ## Set the new validation Recall score to compare with next epoch

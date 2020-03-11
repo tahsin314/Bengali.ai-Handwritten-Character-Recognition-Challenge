@@ -185,6 +185,7 @@ class RandomAugMix(ImageOnlyTransform):
         self.alpha = alpha
 
     def apply(self, image, **params):
+        image = np.squeeze(image)
         image = augment_and_mix(
             image,
             self.severity,
@@ -192,4 +193,4 @@ class RandomAugMix(ImageOnlyTransform):
             self.depth,
             self.alpha
         )
-        return image
+        return np.expand_dims(image, axis=2)
