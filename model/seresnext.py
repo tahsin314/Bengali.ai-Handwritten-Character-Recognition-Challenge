@@ -35,9 +35,9 @@ class seresnext(nn.Module):
         self.layer4_2 = self.backbone.layer4
         self.layer4_3 = self.backbone.layer4
         
-        self.head1 = Head(nc,n[0])
-        self.head2 = Head(nc,n[1])
-        self.head3 = Head(nc,n[2])
+        self.head1 = Head(nc,n[0], activation='mish')
+        self.head2 = Head(nc,n[1], activation='mish')
+        self.head3 = Head(nc,n[2], activation='mish')
         
         to_Mish(self.backbone.layer1), to_Mish(self.backbone.layer2), to_Mish(self.backbone.layer3)
         to_Mish(self.backbone.layer4)

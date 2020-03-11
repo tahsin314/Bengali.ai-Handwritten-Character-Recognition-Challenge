@@ -69,6 +69,8 @@ pretrained_model = 'se_resnext101_32x4d'
 # pretrained_model = 'densenet121'
 # pretrained_model = 'efficientnet-b4'
 model_name = '{}_trial_stage1_fold_{}'.format(pretrained_model, fold)
+model_dir = 'model_dir'
+history_dir = 'history_dir'
 imagenet_stats = ([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 load_model = False
 history = pd.DataFrame()
@@ -78,7 +80,8 @@ valid_recall = 0.0
 best_valid_recall = 0.0
 best_valid_loss = np.inf
 np.random.seed(SEED)
-
+os.makedirs(model_dir, exist_ok=True)
+os.makedirs(history_dir, exist_ok=True)
 writer = SummaryWriter('runs')
 
 train_aug =Compose([
@@ -87,7 +90,7 @@ train_aug =Compose([
     Cutout(p=0.3, max_h_size=sz//16, max_w_size=sz//16, num_holes=10, fill_value=0),
     # GridMask(num_grid=7, p=0.7, fill_value=0)
     ], p=0.20),
-    RandomAugMix(severity=3, width=3, alpha=1., p=0.4),
+    RandomAugMix(severity=1, width=1, alpha=1., p=0.2),
     # OneOf([
     #     ElasticTransform(p=0.1, alpha=1, sigma=50, alpha_affine=30,border_mode=cv2.BORDER_CONSTANT,value =0),
     #     GridDistortion(distort_limit =0.05 ,border_mode=cv2.BORDER_CONSTANT,value =0, p=0.1),
@@ -122,9 +125,9 @@ train_df['fold'] = train_df['fold'].astype('int')
 idxs = [i for i in range(len(train_df))]
 train_idx = []
 val_idx = []
-# model = seresnext(nunique, pretrained_model).to(device)
+model = seresnext(nunique, pretrained_model).to(device)
 # model = Dnet(nunique).to(device
-model = EfficientNetWrapper(pretrained_model).to(device)
+# model = EfficientNetWrapper(pretrained_model).to(device)
 # print(summary(model, (3, 128, 128)))
 writer.add_graph(model, torch.FloatTensor(np.random.randn(1, 1, 137, 236)).cuda())
 # writer.close()
@@ -312,7 +315,7 @@ def evaluate(epoch,history):
    history.loc[epoch, 'valid_vowel_recall'] =  recall_vowel
    history.loc[epoch, 'valid_conso_recall'] = recall_consonant
    history.loc[epoch, 'valid_recall'] = total_recall
-   history.to_csv('history_{}.csv'.format(pretrained_model), index=False)
+   history.to_csv(os.path.join(history_dir, 'history_{}.csv'.format(pretrained_model)), index=False)
    return  running_loss/(len(valid_loader)), total_recall
 
 plist = [
@@ -358,12 +361,12 @@ for epoch in range(prev_epoch_num, n_epochs):
         print(f'Validation recall has increased from:  {best_valid_recall:.4f} to: {valid_recall:.4f}. Saving checkpoint')
         best_state = {'model': model.state_dict(), 'optim': optimizer.state_dict(), 'scheduler': lr_reduce_scheduler.state_dict(), 'loss':valid_loss, 'best_recall':valid_recall, 'epoch':epoch}
         # torch.save(best_state, model_name+'.pth')
-        torch.save(best_state, model_name+'_rec.pth')
-        torch.save(model.state_dict(), '{}_model_weights_best_recall.pth'.format(model_name)) ## Saving model weights based on best validation accuracy.
+        torch.save(best_state, os.path.join(model_dir, model_name+'_rec.pth'))
+        torch.save(model.state_dict(), os.path.join(model_dir, '{}_model_weights_best_recall.pth'.format(model_name))) ## Saving model weights based on best validation accuracy.
         best_valid_recall = valid_recall ## Set the new validation Recall score to compare with next epoch
     if valid_loss<best_valid_loss:
         print(f'Validation loss has decreased from:  {best_valid_loss:.4f} to: {valid_loss:.4f}. Saving checkpoint')
         best_state = {'model': model.state_dict(), 'optim': optimizer.state_dict(), 'scheduler': lr_reduce_scheduler.state_dict(), 'recall':valid_recall, 'best_loss':valid_loss, 'epoch':epoch}
-        torch.save(best_state, model_name+'_loss.pth')
-        torch.save(model.state_dict(), '{}_model_weights_best_loss.pth'.format(model_name)) ## Saving model weights based on best validation accuracy.
+        torch.save(best_state, os.path.join(model_dir, model_name+'_loss.pth'))
+        torch.save(model.state_dict(), os.path.join(model_dir, '{}_model_weights_best_loss.pth'.format(model_name))) ## Saving model weights based on best validation accuracy.
         best_valid_loss = valid_loss ## Set the new validation Recall score to compare with next epoch
