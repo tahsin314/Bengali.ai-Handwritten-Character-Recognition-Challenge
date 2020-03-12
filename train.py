@@ -199,7 +199,7 @@ def train(epoch,history):
     labels2 = labels2.to(device)
     labels3 = labels3.to(device)
     total += len(inputs)
-    choice = choices(opts, weights=[1.0, 0.0, 0.0])
+    choice = choices(opts, weights=[0.20, 0.30, 0.50])
     # print(torch.max())
     # denormalize = UnNormalize(*imagenet_stats)
     # print(torch.max(denormalize(inputs)))
