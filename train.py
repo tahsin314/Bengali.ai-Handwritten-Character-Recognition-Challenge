@@ -1,4 +1,5 @@
 import os
+import shutil
 import sys
 import curses 
 import gc
@@ -60,11 +61,11 @@ fold = 0
 SEED = 24
 batch_size = 48
 sz = 128
-learning_rate = 2e-4
+learning_rate = 1e-3
 patience = 5
 opts = ['normal', 'mixup', 'cutmix']
 device = 'cuda:0'
-apex = True
+apex = False
 # pretrained_model = 'se_resnext101_32x4d'
 pretrained_model = 'densenet121'
 # pretrained_model = 'efficientnet-b4'
@@ -78,11 +79,25 @@ prev_epoch_num = 0
 n_epochs = 210
 valid_recall = 0.0
 best_valid_recall = 0.0
+tb_dir = 'runs_dnet'
 best_valid_loss = np.inf
 np.random.seed(SEED)
 os.makedirs(model_dir, exist_ok=True)
 os.makedirs(history_dir, exist_ok=True)
-writer = SummaryWriter('runs_dnet')
+if os.path.exists(tb_dir):
+  try:
+    shutil.rmtree(tb_dir)
+  except OSError as e:
+    print("Error: {} : {}".format(tb_dir, e.strerror))
+
+def launchTensorBoard():
+  os.system('tensorboard --logdir ./ --port 9999 --host 0.0.0.0')
+  return 
+
+import threading
+t = threading.Thread(target=launchTensorBoard, args=([]))
+t.start()
+writer = SummaryWriter(tb_dir)
 
 train_aug =Compose([
   ShiftScaleRotate(p=0.9,border_mode= cv2.BORDER_CONSTANT, value=[0, 0, 0], scale_limit=0.25),
@@ -147,7 +162,7 @@ train_loader = DataLoader(train_ds,batch_size=batch_size, shuffle=True)
 valid_ds = BanglaDataset(train_df, 'data/numpy_format', val_idx, aug=None)
 valid_loader = DataLoader(valid_ds, batch_size=batch_size, shuffle=True)
 
-writer = SummaryWriter('runs_dnet')
+writer = SummaryWriter(tb_dir)
 ## This function for train is copied from @hanjoonchoe
 ## We are going to train and track accuracy and then evaluate and track validation accuracy
 
