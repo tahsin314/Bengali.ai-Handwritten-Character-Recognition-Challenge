@@ -1,5 +1,6 @@
 import os
 import shutil
+import threading
 import sys
 import curses 
 import gc
@@ -94,7 +95,7 @@ def launchTensorBoard():
   os.system('tensorboard --logdir ./ --port 9999 --host 0.0.0.0')
   return 
 
-import threading
+
 t = threading.Thread(target=launchTensorBoard, args=([]))
 t.start()
 writer = SummaryWriter(tb_dir)
