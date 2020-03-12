@@ -62,7 +62,7 @@ fold = 0
 SEED = 24
 batch_size = 48
 sz = 128
-learning_rate = 1e-3
+learning_rate = 2e-3
 patience = 5
 opts = ['normal', 'mixup', 'cutmix']
 device = 'cuda:0'
@@ -103,7 +103,7 @@ writer = SummaryWriter(tb_dir)
 train_aug =Compose([
   ShiftScaleRotate(p=0.9,border_mode= cv2.BORDER_CONSTANT, value=[0, 0, 0], scale_limit=0.25),
     OneOf([
-    Cutout(p=0.3, max_h_size=sz//16, max_w_size=sz//16, num_holes=10, fill_value=0),
+    Cutout(p=0.3, max_h_size=sz//14, max_w_size=sz//14, num_holes=16, fill_value=0),
     # GridMask(num_grid=7, p=0.7, fill_value=0)
     ], p=0.20),
     # RandomAugMix(severity=1, width=1, alpha=1., p=0.2),
@@ -355,7 +355,7 @@ lr_reduce_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode
 criterion = nn.CrossEntropyLoss()
 
 if load_model:
-  tmp = torch.load(model_name+'_rec.pth')
+  tmp = torch.load(os.path.join(model_dir, model_name+'_rec.pth'))
   model.load_state_dict(tmp['model'])
   # optimizer.load_state_dict(tmp['optim'])
   best_valid_recall = tmp['best_recall']
