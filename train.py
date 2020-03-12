@@ -1,5 +1,7 @@
 import os
+import shutil
 import sys
+import threading
 import curses 
 import gc
 import time
@@ -58,19 +60,20 @@ from albumentations import (
 n_fold = 20
 fold = 0
 SEED = 24
-batch_size = 48
+batch_size = 32
 sz = 128
-learning_rate = 4e-5
+learning_rate = 5e-4
 patience = 5
 opts = ['normal', 'mixup', 'cutmix']
 device = 'cuda:0'
-apex = True
+apex = False
 pretrained_model = 'se_resnext101_32x4d'
 # pretrained_model = 'densenet121'
 # pretrained_model = 'efficientnet-b4'
 model_name = '{}_trial_stage1_fold_{}'.format(pretrained_model, fold)
 model_dir = 'model_dir'
 history_dir = 'history_dir'
+tb_dir = 'runs_seresnext'
 imagenet_stats = ([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 load_model = False
 history = pd.DataFrame()
@@ -82,26 +85,44 @@ best_valid_loss = np.inf
 np.random.seed(SEED)
 os.makedirs(model_dir, exist_ok=True)
 os.makedirs(history_dir, exist_ok=True)
-writer = SummaryWriter('runs_seresnext')
+
+if os.path.exists(tb_dir):
+  try:
+    shutil.rmtree(tb_dir)
+  except OSError as e:
+    print("Error: {} : {}".format(tb_dir, e.strerror))
+
+def launchTensorBoard():
+  os.system('tensorboard --logdir ./ --port 9999 --host 0.0.0.0')
+  return 
+
+
+try:
+  t = threading.Thread(target=launchTensorBoard, args=([]))
+  t.start()
+except:
+  pass
+
+writer = SummaryWriter(tb_dir)
 
 train_aug =Compose([
   ShiftScaleRotate(p=0.9,border_mode= cv2.BORDER_CONSTANT, value=[0, 0, 0], scale_limit=0.25),
     OneOf([
     Cutout(p=0.3, max_h_size=sz//16, max_w_size=sz//16, num_holes=10, fill_value=0),
-    # GridMask(num_grid=7, p=0.7, fill_value=0)
+    GridMask(num_grid=7, p=0.7, fill_value=0)
     ], p=0.20),
-    # RandomAugMix(severity=1, width=1, alpha=1., p=0.2),
+    RandomAugMix(severity=1, width=1, alpha=1., p=0.05),
     # OneOf([
     #     ElasticTransform(p=0.1, alpha=1, sigma=50, alpha_affine=30,border_mode=cv2.BORDER_CONSTANT,value =0),
     #     GridDistortion(distort_limit =0.05 ,border_mode=cv2.BORDER_CONSTANT,value =0, p=0.1),
     #     OpticalDistortion(p=0.1, distort_limit= 0.05, shift_limit=0.2,border_mode=cv2.BORDER_CONSTANT,value =0)                  
     #     ], p=0.3),
-    # OneOf([
-    #     GaussNoise(var_limit=0.01),
-    #     Blur(),
-    #     GaussianBlur(blur_limit=3),
-    #     RandomGamma(p=0.8),
-    #     ], p=0.5)
+    OneOf([
+        GaussNoise(var_limit=0.01),
+        Blur(),
+        GaussianBlur(blur_limit=3),
+        RandomGamma(p=0.8),
+        ], p=0.4)
     # Normalize()
     ]
       )
@@ -147,7 +168,7 @@ train_loader = DataLoader(train_ds,batch_size=batch_size, shuffle=True)
 valid_ds = BanglaDataset(train_df, 'data/numpy_format', val_idx, aug=None)
 valid_loader = DataLoader(valid_ds, batch_size=batch_size, shuffle=True)
 
-writer = SummaryWriter('runs_seresnext')
+writer = SummaryWriter(tb_dir)
 ## This function for train is copied from @hanjoonchoe
 ## We are going to train and track accuracy and then evaluate and track validation accuracy
 
