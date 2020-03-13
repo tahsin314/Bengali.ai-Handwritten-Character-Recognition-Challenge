@@ -30,7 +30,7 @@ class Dnet(nn.Module):
         self.layer4 = nn.Sequential(m.features.transition3,m.features.denseblock4,
                                     m.features.norm5)
         
-        nc = self.layer4[-1].weight.shape[0]
+        nc = self.layer4[-1].weight.shape[0]//2
         self.head1 = Head(nc,n[0])
         self.head2 = Head(nc,n[1])
         self.head3 = Head(nc,n[2])

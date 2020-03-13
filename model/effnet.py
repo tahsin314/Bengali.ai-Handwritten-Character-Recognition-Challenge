@@ -25,9 +25,9 @@ class EfficientNetWrapper(nn.Module):
         nc = 1792
         self.bn = nn.BatchNorm2d(nc, eps=0.001, momentum=0.010000000000000009, affine=True, track_running_stats=True)
         n = [168, 11, 7]
-        self.head1 = Head(nc,n[0])
-        self.head2 = Head(nc,n[1])
-        self.head3 = Head(nc,n[2])
+        self.head1 = Head(nc//2,n[0])
+        self.head2 = Head(nc//2,n[1])
+        self.head3 = Head(nc//2,n[2])
         
     def forward(self, X):
         output = self.backbone.extract_features(X)

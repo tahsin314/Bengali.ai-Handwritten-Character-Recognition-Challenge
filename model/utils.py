@@ -96,13 +96,13 @@ def to_Mish(model):
             to_Mish(child)
 
 class Head(nn.Module):
-    def __init__(self, nc, n, ps=0.5, activation='swish'):
+    def __init__(self, nc, n, ps=0.5, activation='swish', pool='Gem'):
         super().__init__()
         if activation=='mish':
             layers = [AdaptiveConcatPool2d(), Mish(), Flatten()] + \
             bn_drop_lin(nc*2, 512, True, ps, Mish()) + \
             bn_drop_lin(512, n, True, ps)
-        else:
+        elif activation=='swish' and pool=='Gem':
             layers = [GeM(), Swish(), Flatten()] + \
             bn_drop_lin(nc*2, 512, True, ps, Swish()) + \
             bn_drop_lin(512, n, True, ps)
