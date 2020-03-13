@@ -66,7 +66,7 @@ learning_rate = 3e-3
 patience = 5
 opts = ['normal', 'mixup', 'cutmix']
 device = 'cuda:0'
-apex = False
+apex = True
 pretrained_model = 'se_resnext101_32x4d'
 # pretrained_model = 'densenet121'
 # pretrained_model = 'efficientnet-b4'
@@ -360,7 +360,7 @@ lr_reduce_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode
 criterion = nn.CrossEntropyLoss()
 
 if load_model:
-  tmp = torch.load(model_name+'_rec.pth')
+  tmp = torch.load(os.path.join(model_dir, model_name+'_rec.pth'))
   model.load_state_dict(tmp['model'])
   # optimizer.load_state_dict(tmp['optim'])
   best_valid_recall = tmp['best_recall']
