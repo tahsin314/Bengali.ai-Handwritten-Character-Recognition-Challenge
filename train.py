@@ -57,23 +57,23 @@ from albumentations import (
     GaussianBlur,
     Normalize, 
 )
-n_fold = 20
-fold = 0
+n_fold = 5
+fold = 1
 SEED = 24
 batch_size = 32
 sz = 128
-learning_rate = 3e-3
+learning_rate = 1.25e-3
 patience = 5
 opts = ['normal', 'mixup', 'cutmix']
 device = 'cuda:0'
 apex = False
-pretrained_model = 'se_resnext101_32x4d'
+pretrained_model = 'se_resnext50_32x4d'
 # pretrained_model = 'densenet121'
 # pretrained_model = 'efficientnet-b4'
 model_name = '{}_trial_stage1_fold_{}'.format(pretrained_model, fold)
 model_dir = 'model_dir'
 history_dir = 'history_dir'
-tb_dir = 'runs_seresnext'
+tb_dir = 'runs_seresnext50'
 imagenet_stats = ([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
 load_model = True
 history = pd.DataFrame()
@@ -336,7 +336,7 @@ def evaluate(epoch,history):
    history.loc[epoch, 'valid_vowel_recall'] =  recall_vowel
    history.loc[epoch, 'valid_conso_recall'] = recall_consonant
    history.loc[epoch, 'valid_recall'] = total_recall
-   history.to_csv(os.path.join(history_dir, 'history_{}.csv'.format(pretrained_model)), index=False)
+   history.to_csv(os.path.join(history_dir, 'history_{}.csv'.format(model_name)), index=False)
    return  running_loss/(len(valid_loader)), total_recall
 
 plist = [
@@ -360,12 +360,12 @@ lr_reduce_scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode
 criterion = nn.CrossEntropyLoss()
 
 if load_model:
-  tmp = torch.load(os.path.join(model_dir, model_name+'_rec.pth'))
+  tmp = torch.load(os.path.join(model_dir, model_name+'_loss.pth'))
   model.load_state_dict(tmp['model'])
-  # optimizer.load_state_dict(tmp['optim'])
-  best_valid_recall = tmp['best_recall']
+  optimizer.load_state_dict(tmp['optim'])
+  best_valid_recall = tmp['recall']
   prev_epoch_num = tmp['epoch']
-  best_valid_loss = tmp['loss']
+  best_valid_loss = tmp['best_loss']
   del tmp
   print('Model Loaded!')
 
