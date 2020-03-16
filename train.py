@@ -97,13 +97,13 @@ def launchTensorBoard():
   return 
 
 
-try:
-  t = threading.Thread(target=launchTensorBoard, args=([]))
-  t.start()
-except:
-  pass
+# try:
+#   t = threading.Thread(target=launchTensorBoard, args=([]))
+#   t.start()
+# except:
+#   pass
 
-writer = SummaryWriter(tb_dir)
+# writer = SummaryWriter(tb_dir)
 
 train_aug =Compose([
   ShiftScaleRotate(p=0.9,border_mode= cv2.BORDER_CONSTANT, value=[0, 0, 0], scale_limit=0.25),
@@ -150,7 +150,7 @@ model = seresnext(nunique, pretrained_model).to(device)
 # model = Dnet(nunique).to(device)
 # model = EfficientNetWrapper(pretrained_model).to(device)
 # print(summary(model, (3, 128, 128)))
-writer.add_graph(model, torch.FloatTensor(np.random.randn(1, 1, 137, 236)).cuda())
+# writer.add_graph(model, torch.FloatTensor(np.random.randn(1, 1, 137, 236)).cuda())
 # writer.close()
 
 # For stratified split
@@ -168,7 +168,7 @@ train_loader = DataLoader(train_ds,batch_size=batch_size, shuffle=True)
 valid_ds = BanglaDataset(train_df, 'data/numpy_format', val_idx, aug=None)
 valid_loader = DataLoader(valid_ds, batch_size=batch_size, shuffle=True)
 
-writer = SummaryWriter(tb_dir)
+# writer = SummaryWriter(tb_dir)
 ## This function for train is copied from @hanjoonchoe
 ## We are going to train and track accuracy and then evaluate and track validation accuracy
 
@@ -203,7 +203,7 @@ def train(epoch,history):
     # print(torch.max())
     # denormalize = UnNormalize(*imagenet_stats)
     # print(torch.max(denormalize(inputs)))
-    writer.add_images('my_image', inputs, 0)
+    # writer.add_images('my_image', inputs, 0)
     optimizer.zero_grad()
     if choice[0] == 'normal':
       outputs1,outputs2,outputs3 = model(inputs.float())
@@ -245,12 +245,13 @@ def train(epoch,history):
     lr = None
     for param_group in optimizer.param_groups:
         lr = param_group['lr']
-    writer.add_scalar('Learning Rate', lr, epoch*len(train_loader)+idx)
-    writer.add_scalar('OHEM Rate', rate, epoch)
-    writer.add_scalar('Loss/train', running_loss/(idx+1), epoch*len(train_loader)+idx)
-    writer.add_scalar('Train Accuracy/Root', grapheme_root_out/(idx+1), epoch*len(train_loader)+idx)
-    writer.add_scalar('Train Accuracy/Vowel', vowel_diacritic_out/(idx+1), epoch*len(train_loader)+idx)
-    writer.add_scalar('Train Accuracy/Consonant', consonant_diacritic_out/(idx+1), epoch*len(train_loader)+idx)
+    # writer.add_scalar('Learning Rate', lr, epoch*len(train_loader)+idx)
+    # writer.add_scalar('OHEM Rate', rate, epoch)
+    # writer.add_scalar('Loss/train', running_loss/(idx+1), epoch*len(train_loader)+idx)
+    # writer.close()
+    # writer.add_scalar('Train Accuracy/Root', grapheme_root_out/(idx+1), epoch*len(train_loader)+idx)
+    # writer.add_scalar('Train Accuracy/Vowel', vowel_diacritic_out/(idx+1), epoch*len(train_loader)+idx)
+    # writer.add_scalar('Train Accuracy/Consonant', consonant_diacritic_out/(idx+1), epoch*len(train_loader)+idx)
     if idx%1==0:
       msg = 'Epoch: {} \t Progress: {}/{} \t Loss: {:.4f} \t Time: {}s \t ETA: {}s'.format(epoch, 
       idx, len(train_loader), running_loss/(idx+1), elapsed, eta)
@@ -318,15 +319,15 @@ def evaluate(epoch,history):
    recall_consonant = sklearn.metrics.recall_score(pred3, lab3, average='macro')
    scores = [recall_graph, recall_vowel, recall_consonant]
    total_recall = np.average(scores, weights=[2, 1, 1])
-   writer.add_scalar('Loss/val', running_loss/(len(valid_loader)), epoch)
-   writer.add_scalar('Val Accuracy/Root', grapheme_root_out/(len(valid_loader)), epoch)
-   writer.add_scalar('Val Accuracy/Vowel', vowel_diacritic_out/(len(valid_loader)), epoch)
-   writer.add_scalar('Val Accuracy/Consonant', consonant_diacritic_out/(len(valid_loader)), epoch)
+  #  writer.add_scalar('Loss/val', running_loss/(len(valid_loader)), epoch)
+  #  writer.add_scalar('Val Accuracy/Root', grapheme_root_out/(len(valid_loader)), epoch)
+  #  writer.add_scalar('Val Accuracy/Vowel', vowel_diacritic_out/(len(valid_loader)), epoch)
+  #  writer.add_scalar('Val Accuracy/Consonant', consonant_diacritic_out/(len(valid_loader)), epoch)
 
-   writer.add_scalar('Val Recall/Root', recall_graph, epoch)
-   writer.add_scalar('Val Recall/Vowel', recall_vowel, epoch)
-   writer.add_scalar('Val Recall/Consonant', recall_consonant, epoch)
-   writer.add_scalar('Val Recall/Total', total_recall, epoch)
+  #  writer.add_scalar('Val Recall/Root', recall_graph, epoch)
+  #  writer.add_scalar('Val Recall/Vowel', recall_vowel, epoch)
+  #  writer.add_scalar('Val Recall/Consonant', recall_consonant, epoch)
+  #  writer.add_scalar('Val Recall/Total', total_recall, epoch)
 
    msg = 'Loss: {:.4f} \n Acc:     \t Root {:.4f}     \t Vowel {:.4f} \t Consonant {:.4f} \nRecall:  \t Root {:.4f}     \t Vowel {:.4f} \t Consonant {:.4f} Total {:.4f}\n'.format(running_loss/(len(valid_loader)), grapheme_root_out/(len(valid_loader)), vowel_diacritic_out/(len(valid_loader)), consonant_diacritic_out/(len(valid_loader)), recall_graph, recall_vowel, recall_consonant, total_recall)
    print(msg)
