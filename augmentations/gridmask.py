@@ -1,6 +1,8 @@
 import numpy as np
 import cv2
 import torch
+# https://www.kaggle.com/c/bengaliai-cv19/discussion/128161
+
 import torch.nn as nn
 from torch.nn import functional as F
 import albumentations
