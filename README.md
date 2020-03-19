@@ -50,5 +50,8 @@ class GeM(nn.Module):
         return self.class.name + '(' + 'p=' + '{:.4f}'.format(self.p.data.tolist()[0]) + ', ' + 'eps=' + str(self.eps) + ')'
 ```
 
+**How to run**
+- Run `pip install -r requirements.txt`
+- Run `train.py`
 
 **More resources will be added soon.**
