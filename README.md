@@ -29,7 +29,7 @@ Used `OHEM Loss` with dynamic rate for training.
 - [Augmix](https://www.kaggle.com/c/bengaliai-cv19/discussion/129697) Implementation  
 
 **Resources**:
-- Half Precision GeM:
+- [Half Precision GeM](https://www.kaggle.com/c/bengaliai-cv19/discussion/128911):
 
 ```
 def gem(x, p=3, eps=1e-6):
