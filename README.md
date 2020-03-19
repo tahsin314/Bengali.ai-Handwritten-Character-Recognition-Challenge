@@ -55,7 +55,8 @@ class GeM(nn.Module):
 - Run `train.py`
 
 **Credits**
-Thanks to the kaggle community for sharing a lot of resources and making the tasks easier for us. Here is a list of discussions from where I've borrowed codes and/or inspired to write codes:
+
+Thanks to the kaggle community for sharing a lot of resources and making the tasks easier for us. Here is a list of discussions from where I've borrowed codes and/or became inspired to write codes:
 
 - [Augmix](https://www.kaggle.com/c/bengaliai-cv19/discussion/129697)
 - [GridMask](https://www.kaggle.com/c/bengaliai-cv19/discussion/128161)
