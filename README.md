@@ -3,8 +3,11 @@ My scripts for the [Bengali.ai handwritten character Recognition challenge 2019]
 
 I added customized 1 channel input `seresext`, `densenet`, `efficientnet` and `ghostnet` models in this repo.
 
-Used `OHEM Loss` with dynamic rate for training.
-
+**My Method**:
+ - Trained each model for around 100 epochs with `OHEM cross-entropy` loss.
+ - Trained the first 30 epochs with `rate=1` for OHEM loss. Then gradually decreased the rate to 0.65 over the next 35 epochs. This approach significantly increased my *Grapheme* recall. 
+- Applied *CutOut, CutMix and Mixup* augmentations.
+- Used heavy augmentations during training `se-resnext101` model.
 
 **Things that works**:
  - SE-Resnext50
