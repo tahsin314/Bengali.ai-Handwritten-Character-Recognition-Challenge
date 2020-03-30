@@ -1,7 +1,7 @@
 ## Bengali.ai Handwritten Character Recognition Challenge: 100-ish solution(?)
 My scripts for the [Bengali.ai handwritten character Recognition challenge 2019](https://www.kaggle.com/c/bengaliai-cv19). Although I could not submit the final trained models within the competition deadline, later I found out that it would get me a `100`-ish private Leadeboard position.
 
-Trained using customized 1 channel input `densenet` and `se-resnext` model.
+I added customized 1 channel input `seresext`, `densenet`, `efficientnet` and `ghostnet` models in this repo.
 
 Used `OHEM Loss` with dynamic rate for training.
 
