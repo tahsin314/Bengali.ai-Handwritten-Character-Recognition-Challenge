@@ -77,7 +77,7 @@ importlib-metadata==1.5.0
 inferentia-hwm==1.0.897.0+6002947737
 ipykernel==4.8.2
 ipyparallel==6.2.2
-ipython==6.4.0
+ipython==7.16.3
 ipython-genutils==0.2.0
 ipywidgets==7.4.0
 islpy==2018.2+aws2018.x.187.0.bld6004179425
