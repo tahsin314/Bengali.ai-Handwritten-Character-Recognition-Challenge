@@ -41,7 +41,7 @@ datashape==0.5.4
 decorator==4.3.0
 defusedxml==0.6.0
 dill==0.3.1.1
-distributed==1.21.8
+distributed==2021.10.0
 dmlc-nnvm==1.0.1826.0+6004211132
 dmlc-topi==1.0.1826.0+6004211132
 dmlc-tvm==1.0.1826.0+6004211132
